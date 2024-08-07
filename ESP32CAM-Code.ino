@@ -4,8 +4,9 @@
 #include "soc/rtc_cntl_reg.h"
 #include "esp_http_server.h"
 
-const char* ssid = "Chibs";
-const char* password = "12345678";
+const char* ssid = "CHIBS-MIFI";
+const char* password = "Nzubeblaise1.";
+
 
 void startCameraServer();
 
@@ -39,6 +40,17 @@ void setup() {
   config.jpeg_quality = 12;
   config.fb_count = 1;
 
+  // Lower the resolution to reduce latency
+  if(psramFound()){
+    config.frame_size = FRAMESIZE_QVGA;  // 320x240
+    config.jpeg_quality = 12;            // Lower quality for faster streaming
+    config.fb_count = 2;
+  } else {
+    config.frame_size = FRAMESIZE_QVGA;  // 320x240
+    config.jpeg_quality = 12;            // Lower quality for faster streaming
+    config.fb_count = 1;
+  }
+
   // Camera init
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK) {
@@ -53,6 +65,7 @@ void setup() {
     Serial.print(".");
   }
   Serial.println("");
+
   Serial.println("WiFi connected");
   Serial.print("Camera Stream Ready! Go to: http://");
   Serial.print(WiFi.localIP());
