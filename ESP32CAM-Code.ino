@@ -5,7 +5,7 @@
 #include "esp_http_server.h"
 
 const char* ssid = "CHIBS-MIFI";
-const char* password = "Nzubeblaise1.";
+const char* password = "...........";
 
 
 void startCameraServer();
