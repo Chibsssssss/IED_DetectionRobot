@@ -1,26 +1,29 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <ESP32Servo.h>
-#include <ESP32Ping.h>
 #include <NewPing.h>
-
 #include <DHT.h>
+
 #define DHTTYPE DHT11
 
 // Wi-Fi credentials
-const char* ssid = "CHIBS-MIFI";
-const char* password = ".........";
+const char* ssid = "Goldmindz_Electronics";
+const char* password = "Godisgreat24";
 
+//  *** Pin definitions ***
 
-// Pin definitions
-int directionPin = 13;
-int speedPin = 12;
-int leftRightServoPin = 14; // Servo for left and right turning
-int panServoPin = 25;
+// Motor control pins
+int IN1 = 13;
+int IN2 = 12; 
+int IN3 = 27;
+int IN4 = 14;
+int enA = 33;
+int enB = 15;
+
+int panServoPin = 25; // Servo motor pins
 int tiltServoPin = 26;
 
-const int trigPinFront = 15;
-const int echoPinFront = 4;
+// Ultrasonic Sensor Pins
 const int trigPinBack = 16;
 const int echoPinBack = 17;
 const int trigPinLeft = 18;
@@ -28,13 +31,16 @@ const int echoPinLeft = 19;
 const int trigPinRight = 21;
 const int echoPinRight = 22;
 
-int ammoniaSensorPin = 34;
-int metalSensorPin = 35;
-int temperatureSensorPin = 23;
-int rainSensorPin = 32;
+// Sensor Pins
+int ammoniaSensorPin = 34; // Analog input
+int metalSensorPin = 35;   // Analog input
+int temperatureSensorPin = 23; // DHT11 sensor pin
+int rainSensorPin = 32;    // Analog input
+
+// Radio Frequency Detector
+int radioFrequencyLevel_3 = 4;
 
 // Initialize NewPing objects for each ultrasonic sensor
-NewPing sonarFront(trigPinFront, echoPinFront, 200);
 NewPing sonarBack(trigPinBack, echoPinBack, 200);
 NewPing sonarLeft(trigPinLeft, echoPinLeft, 200);
 NewPing sonarRight(trigPinRight, echoPinRight, 200);
@@ -43,19 +49,23 @@ DHT dht(temperatureSensorPin, DHTTYPE);
 
 const int ledPin = 2; // LED pin
 
-Servo leftRightServo;
 Servo panServo;
 Servo tiltServo;
 
 int speedValue = 255;
-int leftrightValue = 90;
 bool ledState = false;
 
 WebServer server(80);
 
+// Define PWM channels and frequency
+//const int pwmChannelA = 0;
+//const int pwmChannelB = 1;
+//const int pwmFreq = 5000; // 5 kHz
+//const int pwmResolution = 8; // 8-bit resolution (0-255)
+
 void setup() {
   Serial.begin(115200);
-  //dht.begin();
+  dht.begin();
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -74,11 +84,22 @@ void setup() {
   server.begin();
 
   // Initialize motor control pins
-  pinMode(directionPin, OUTPUT);
-  pinMode(speedPin, OUTPUT);
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+  pinMode(enA, OUTPUT);
+  pinMode(enB, OUTPUT);
+
+  // Initialize PWM channels
+  //ledcSetup(pwmChannelA, pwmFreq, pwmResolution);
+  //ledcSetup(pwmChannelB, pwmFreq, pwmResolution);
+
+  // Attach the PWM channels to the GPIO pins
+  //ledcAttachPin(enA, pwmChannelA);
+  //ledcAttachPin(enB, pwmChannelB);
 
   // Initialize servos
-  leftRightServo.attach(leftRightServoPin);
   panServo.attach(panServoPin);
   tiltServo.attach(tiltServoPin);
 
@@ -88,8 +109,6 @@ void setup() {
   pinMode(temperatureSensorPin, INPUT);
   pinMode(rainSensorPin, INPUT);
 
-  pinMode(trigPinFront, OUTPUT);
-  pinMode(echoPinFront, INPUT);
   pinMode(trigPinBack, OUTPUT);
   pinMode(echoPinBack, INPUT);
   pinMode(trigPinLeft, OUTPUT);
@@ -97,67 +116,110 @@ void setup() {
   pinMode(trigPinRight, OUTPUT);
   pinMode(echoPinRight, INPUT);
 
+  pinMode(radioFrequencyLevel_3, INPUT);
+
   pinMode(ledPin, OUTPUT);
+
+  Serial.println("Setup complete");
 }
 
 void loop() {
+  handleSensorData();
   server.handleClient();
 }
 
 void handleRoot() {
+  Serial.println("Root endpoint hit");
   server.send(200, "text/html", "Hello, this is the main ESP32.");
 }
 
 void handleMove() {
   String direction = server.arg("direction");
+  Serial.print("Move command received: ");
+  Serial.println(direction);
+
   if (direction == "forward") {
-    digitalWrite(directionPin, HIGH);
-    analogWrite(speedPin, speedValue);
-    Serial.print("F - ");Serial.println(speedValue);
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, HIGH);
+    digitalWrite(IN3, HIGH);
+    digitalWrite(IN4, LOW);
+    analogWrite(enA, speedValue);
+    analogWrite(enB, speedValue);
+    //ledcWrite(pwmChannelA, speedValue);
+    //ledcWrite(pwmChannelB, speedValue);
+
+    Serial.print("Moving forward with speed: ");
+    Serial.println(speedValue);
   } else if (direction == "backward") {
-    digitalWrite(directionPin, LOW);
-    analogWrite(speedPin, speedValue);
-    Serial.print("B - ");Serial.println(speedValue);
+    digitalWrite(IN1, HIGH);
+    digitalWrite(IN2, LOW);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, HIGH);
+    analogWrite(enA, speedValue);
+    analogWrite(enB, speedValue);
+    //ledcWrite(pwmChannelA, speedValue);
+    //ledcWrite(pwmChannelB, speedValue);
+    Serial.print("Moving backward with speed: ");
+    Serial.println(speedValue);
   } else if (direction == "left") {
-    leftrightValue += 10;
-    if(leftrightValue >= 180){
-      leftrightValue = 180;
-      }
-    leftRightServo.write(leftrightValue); // Adjust as needed
-    Serial.print("L - ");
-    Serial.println(leftrightValue);
+    digitalWrite(IN1, HIGH);
+    digitalWrite(IN2, LOW);
+    digitalWrite(IN3, HIGH);
+    digitalWrite(IN4, LOW);
+    analogWrite(enA, speedValue);
+    analogWrite(enB, speedValue);
+    //ledcWrite(pwmChannelA, speedValue);
+    //ledcWrite(pwmChannelB, speedValue);
+    Serial.print("Turning left with speed: ");
+    Serial.println(speedValue);
   } else if (direction == "right") {
-    leftrightValue -= 10;
-    if(leftrightValue <= 0){
-      leftrightValue = 0;
-      }
-    leftRightServo.write(leftrightValue); // Adjust as needed
-    Serial.print("R - ");
-    Serial.println(leftrightValue);
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, HIGH);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, HIGH);
+    analogWrite(enA, speedValue);
+    analogWrite(enB, speedValue);
+    //ledcWrite(pwmChannelA, speedValue);
+    //ledcWrite(pwmChannelB, speedValue);
+    Serial.print("Turning right with speed: ");
+    Serial.println(speedValue);
   } else if (direction == "stop") {
-    analogWrite(speedPin, 0);
-    leftrightValue = 90;
-    leftRightServo.write(leftrightValue); // Center position
-    Serial.println("STOP");
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, LOW);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, LOW);
+    //ledcWrite(pwmChannelA, 0);
+    //ledcWrite(pwmChannelB, 0);
+    Serial.println("Stopping");
   }
+
   server.send(200, "text/plain", "OK");
 }
 
 void handleServo() {
   String servo = server.arg("servo");
   int value = server.arg("value").toInt();
+  Serial.print("Servo command received: ");
+  Serial.print(servo);
+  Serial.print(" with value: ");
+  Serial.println(value);
+
   if (servo == "pan") {
     panServo.write(value);
+    Serial.print("Pan servo set to: ");
     Serial.println(value);
   } else if (servo == "tilt") {
     tiltServo.write(value);
+    Serial.print("Tilt servo set to: ");
     Serial.println(value);
   }
+
   server.send(200, "text/plain", "OK");
 }
 
 void handleSpeed() {
   speedValue = server.arg("value").toInt();
+  Serial.print("Speed value set to: ");
   Serial.println(speedValue);
   server.send(200, "text/plain", "OK");
 }
@@ -165,8 +227,8 @@ void handleSpeed() {
 void handleToggleLED() {
   ledState = !ledState;
   digitalWrite(ledPin, ledState ? HIGH : LOW);
-  Serial.print("LED ");
-  Serial.println(ledState);
+  Serial.print("LED toggled to: ");
+  Serial.println(ledState ? "ON" : "OFF");
   server.send(200, "text/plain", "OK");
 }
 
@@ -177,30 +239,32 @@ void handleSensorData() {
   int rainValue = digitalRead(rainSensorPin);
 
   float ammoniaPPM = (ammoniaValue / 4095.0) * 100; // Example conversion, adjust as needed
-  float temperature = temperatureValue*5/4095; // Already in degrees Celsius
+  float temperature = temperatureValue; // Already in degrees Celsius
 
-  /*
-  Serial.print("Ammonia Conc: ");
+  int distanceBack = sonarBack.ping_cm();
+  int distanceLeft = sonarLeft.ping_cm();
+  int distanceRight = sonarRight.ping_cm();
+
+  Serial.print("Ammonia: ");
   Serial.print(ammoniaPPM);
-  Serial.print("ppm");
-  Serial.print(" || ");
-  Serial.print("Temperature: ");
+  Serial.print(" ppm, Metal: ");
+  Serial.print(metalValue);
+  Serial.print(", Temperature: ");
   Serial.print(temperature);
-  Serial.println(" degree Celsis");
-  */
-
-  // Simulate ultrasonic sensor readings
-  int distanceFront = 30; //sonarFront.ping_cm();
-  int distanceBack = 40;  //sonarBack.ping_cm();
-  int distanceLeft = 50;  //sonarLeft.ping_cm();
-  int distanceRight = 60; //sonarRight.ping_cm();
+  Serial.print(" C, Rain: ");
+  Serial.print(rainValue);
+  Serial.print(", Distance Back: ");
+  Serial.print(distanceBack);
+  Serial.print(" cm, Distance Left: ");
+  Serial.print(distanceLeft);
+  Serial.print(" cm, Distance Right: ");
+  Serial.println(distanceRight);
 
   String json = "{";
   json += "\"ammonia\":" + String(ammoniaPPM) + ",";
   json += "\"metal\":" + String(metalValue) + ",";
   json += "\"temperature\":" + String(temperature) + ",";
   json += "\"rain\":" + String(rainValue) + ",";
-  json += "\"distanceFront\":" + String(distanceFront) + ",";
   json += "\"distanceBack\":" + String(distanceBack) + ",";
   json += "\"distanceLeft\":" + String(distanceLeft) + ",";
   json += "\"distanceRight\":" + String(distanceRight);
