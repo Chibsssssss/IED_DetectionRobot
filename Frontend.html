@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Robot Control</title>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    .container { max-width: 800px; margin: auto; }
+    .video { width: 100%; }
+    .controls, .sliders, .sensors { margin-top: 20px; }
+    .controls button { width: 100px; height: 50px; margin: 10px; }
+    .slider { display: flex; align-items: center; }
+    .slider input { flex-grow: 1; }
+    .slider span { width: 50px; text-align: center; }
+    .sensors { display: flex; justify-content: space-between; }
+    .sensor-bar { width: 100px; height: 200px; background: linear-gradient(to top, green, yellow, red); position: relative; }
+    .sensor-bar span { position: absolute; bottom: 0; width: 100%; text-align: center; color: white; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Robot Control</h1>
+    <img class="video" src="http://192.168.5.98/" alt="Camera Feed">
+    <div class="controls">
+      <button onclick="move('forward')">Forward</button><br>
+      <button onclick="move('left')">Left</button>
+      <button onclick="move('right')">Right</button><br>
+      <button onclick="move('backward')">Backward</button>
+    </div>
+    <div class="sliders">
+      <div class="slider">
+        <span>Pan:</span>
+        <input type="range" min="0" max="180" value="90" oninput="updatePan(this.value)">
+        <span id="pan-output">90</span>
+      </div>
+      <div class="slider">
+        <span>Tilt:</span>
+        <input type="range" min="0" max="180" value="90" oninput="updateTilt(this.value)">
+        <span id="tilt-output">90</span>
+      </div>
+      <div class="slider">
+        <span>Speed:</span>
+        <input type="range" min="0" max="100" value="50" oninput="updateSpeed(this.value)">
+        <span id="speed-output">50</span>
+      </div>
+    </div>
+    <div class="sensors">
+      <div class="sensor-bar" id="ammonia-bar">
+        <span id="ammonia-level">0</span>
+      </div>
+      <div class="sensor-bar" id="metal-bar">
+        <span id="metal-level">No Metal</span>
+      </div>
+      <div class="sensor-bar" id="temperature-bar">
+        <span id="temperature-level">0°C</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const mainEsp32Ip = 'http://192.168.5.184';
+
+    function move(direction) {
+      fetch(`${mainEsp32Ip}/move?direction=${direction}`);
+    }
+
+    function updatePan(value) {
+      document.getElementById('pan-output').innerText = value;
+      fetch(`${mainEsp32Ip}/servo?servo=pan&value=${value}`);
+    }
+
+    function updateTilt(value) {
+      document.getElementById('tilt-output').innerText = value;
+      fetch(`${mainEsp32Ip}/servo?servo=tilt&value=${value}`);
+    }
+
+    function updateSpeed(value) {
+      document.getElementById('speed-output').innerText = value;
+      fetch(`${mainEsp32Ip}/speed?value=${value}`);
+    }
+
+    function updateSensorData() {
+      fetch(`${mainEsp32Ip}/sensor_data`).then(response => response.json()).then(data => {
+        document.getElementById('ammonia-level').innerText = data.ammonia;
+        document.getElementById('metal-level').innerText = data.metal ? 'Metal Detected' : 'No Metal';
+        document.getElementById('temperature-level').innerText = `${data.temperature}°C`;
+
+        document.getElementById('ammonia-bar').style.height = `${data.ammonia}%`;
+        document.getElementById('metal-bar').style.backgroundColor = data.metal ? 'red' : 'green';
+        document.getElementById('temperature-bar').style.height = `${data.temperature}%`;
+      });
+    }
+
+    setInterval(updateSensorData, 1000);
+  </script>
+</body>
+</html>
