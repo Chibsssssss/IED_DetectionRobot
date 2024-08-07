@@ -1,88 +1,398 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Robot Control Interface</title>
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; }
-    .control-panel { margin-top: 20px; }
-    .button { font-size: 20px; padding: 10px 20px; margin: 10px; }
-    .slider { width: 300px; margin: 20px; }
-    .bar { width: 100px; height: 20px; margin: 10px; display: inline-block; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <script src='https://kit.fontawesome.com/a076d05399.js' crossorigin='anonymous'></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ultra&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900&display=swap" rel="stylesheet">
+    <link href="https://fonts.cdnfonts.com/css/niagara-solid" rel="stylesheet">
+
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+            font-family: "Lato", sans-serif;
+            width: 100vw;
+            height: 100vh;
+        }
+        header {
+            height: 50px;
+            width: 100vw;
+            color: darkblue;
+            background-color: darkblue;
+        }
+
+        #head-part {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .notifications {
+            background-color: #D9D9D9;
+            align-self: center;
+            padding: 10px;
+            width: 60%;
+            text-align: center;
+        }
+
+        p#date {
+            font-family: 'Niagara Solid', sans-serif;
+            font-size: 30px;
+        }
+
+        .body {
+            display: flex;
+            justify-content: space-around;
+        }
+        .left {
+            width: 60vw;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            justify-content: space-between;
+        }
+
+        .right {
+            width: 30vw;
+        }
+
+        .live-feed {
+            height: 300px;
+            background-color: #D9D9D9;
+            padding: 20px;
+        }
+
+        .footer-button {
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .r-button {
+            font-weight: 300;
+            background-color: #D9D9D9;
+            border: 0;
+            padding: 5px 10px;
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 15px;
+            border-radius: 5px;
+            background: #d3d3d3;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+        }
+
+        .slider:hover {
+            opacity: 1;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            box-shadow: 1px 1px 2px black;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 25px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-track {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 25px;
+        }
+
+        .toggle-thumb {
+            position: absolute;
+            height: 21px;
+            width: 21px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-track {
+            background-color: #4CAF50;
+        }
+
+        input:checked + .toggle-track .toggle-thumb {
+            transform: translateX(25px);
+        }
+
+        .indicator-container {
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+            color: white;
+        }
+
+        .indicator {
+            width: 50px;
+            height: 180px;
+            background-color: lightgray;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            position: relative;
+            gap: 0px;
+        }
+
+        .metal {
+            background: linear-gradient(to bottom, red, orange, yellow, green);
+        }
+
+        .temp {
+            background: linear-gradient(to bottom, red, orange, yellow, green);
+        }
+
+        .gas {
+            background: linear-gradient(to bottom, red, orange, yellow, green);
+        }
+
+        .button-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 50px auto;
+            background: #333;
+            border-radius: 50%;
+        }
+
+        .button-container .button {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: #333;
+            color: #8fffa0;
+            border-radius: 50%;
+            font-size: 30px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .button-container .button:active {
+            background: #8fffa0;
+            color: #333;
+        }
+
+        .button-container .center {
+            top: 50%;
+            left: 50%;
+            width: 67px;
+            height: 67px;
+            transform: translate(-50%, -50%);
+            border: 15px solid white;
+            background-image: linear-gradient(to center, white, black);
+        }
+
+        .button-container .up {
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: "Ultra", serif;
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        .button-container .down {
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .button-container .left {
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .button-container .right {
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .ultrasonic {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .ultrasonic-bar {
+            width: 50px;
+            border-radius: 10px;
+            background-color: green;
+            height: 10px;
+        }
+
+        .mouse-bar {
+            width: 50px;
+            border-radius: 10px;
+            background-color: black;
+            height: 60px;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
-  <h1>Robot Control Interface</h1>
-  <div>
-    <img src="http://192.168.5.98/" style="width: 600px; height: 400px;" />
-  </div>
-  <div class="control-panel">
-    <button class="button" onclick="move('forward')">Forward</button>
-    <div>
-      <button class="button" onclick="move('left')">Left</button>
-      <button class="button" onclick="move('stop')">Stop</button>
-      <button class="button" onclick="move('right')">Right</button>
+    <img src="tech.png" width="100%">
+    <div id="head-part">
+        <p id="date">27/07/2024</p>
+        <div class="notifications">NOTIFICATION</div>
     </div>
-    <button class="button" onclick="move('backward')">Backward</button>
-  </div>
-  <div class="control-panel">
-    <label for="pan">Pan:</label>
-    <input type="range" id="pan" name="pan" min="0" max="180" class="slider" oninput="setServo('pan', this.value)">
-    <label for="tilt">Tilt:</label>
-    <input type="range" id="tilt" name="tilt" min="0" max="180" class="slider" oninput="setServo('tilt', this.value)">
-    <label for="speed">Speed:</label>
-    <input type="range" id="speed" name="speed" min="0" max="255" class="slider" oninput="setSpeed(this.value)">
-  </div>
-  <div class="control-panel">
-    <div class="bar" id="ammonia-bar" style="background: linear-gradient(to right, green, yellow, red);"></div>
-    <div class="bar" id="metal-bar" style="background: green;"></div>
-    <div class="bar" id="temperature-bar" style="background: linear-gradient(to right, blue, red);"></div>
-    <div class="bar" id="rain-bar" style="background: gray;"></div>
-  </div>
-  <div id="notifications"></div>
+    <div class="body">
+        <div class="left">
+            <div class="live-feed">
+                <img id="cameraFeed" src="http://192.168.152.101/" width="100%" height="100%">
+            </div>
+            <div class="controls">
+                <div>
+                    <span>Tilt </span>
+                    <input type="range" class="slider" min="0" max="180" oninput="sendCommand(`servo?servo=tilt&value=${this.value}`)">
+                </div>
+                <div>
+                    <span>Pan </span>
+                    <input type="range" class="slider" min="0" max="180" oninput="sendCommand(`servo?servo=pan&value=${this.value}`)">
+                </div>
+                <div>
+                    <span>Speed </span>
+                    <input type="range" class="slider" min="0" max="255" oninput="sendCommand(`speed?value=${this.value}`)">
+                </div>
+            </div>
+            <div>
+                <label class="switch">
+                    <input type="checkbox" onclick="toggleLED()">
+                    <span class="toggle-track">
+                        <span class="toggle-thumb"></span>
+                    </span>
+                </label>
+                <button class="r-button" onclick="capturePhoto()">Capture</button>
+            </div>
+        </div>
+        <div class="right">
+            <div class="indicator-container">
+                <div class="indicator metal" id="metalBar">METAL</div>
+                <div class="indicator temp" id="tempBar">TEMP</div>
+                <div class="indicator gas" id="gasBar">GAS</div>
+                <div class="indicator" id="rainBar" style="background-color: lightgray;">RAIN</div>
+            </div>
+            <div class="button-container">
+                <div class="button center" onmousedown="startMove('stop')" onmouseup="stopMove()" ontouchstart="startMove('stop')" ontouchend="stopMove()">+</div>
+                <div class="button up" onmousedown="startMove('forward')" onmouseup="stopMove()" ontouchstart="startMove('forward')" ontouchend="stopMove()">↑</div>
+                <div class="button down" onmousedown="startMove('backward')" onmouseup="stopMove()" ontouchstart="startMove('backward')" ontouchend="stopMove()">↓</div>
+                <div class="button left" onmousedown="startMove('left')" onmouseup="stopMove()" ontouchstart="startMove('left')" ontouchend="stopMove()">←</div>
+                <div class="button right" onmousedown="startMove('right')" onmouseup="stopMove()" ontouchstart="startMove('right')" ontouchend="stopMove()">→</div>
+            </div>
+            <div class="ultrasonic">
+                <div>
+                    <div class="ultrasonic-bar" id="ultrasonicBar"></div>
+                    <div class="mouse-bar"></div>
+                </div>
+            </div>
+        </div>
+        <i class='fas fa-caret-right' style="color: black"></i>
+    </div>
 
-  <script>
-    function move(direction) {
-      var xhr = new XMLHttpRequest();
-      xhr.open("GET", "http://192.168.5.184/move?direction=" + direction, true);
-      xhr.send();
-    }
+    <script>
+        const esp32IP = '192.168.152.252';
+        let moveInterval;
 
-    function setServo(servo, value) {
-      var xhr = new XMLHttpRequest();
-      xhr.open("GET", "http://192.168.5.184/servo?servo=" + servo + "&value=" + value, true);
-      xhr.send();
-    }
-
-    function setSpeed(value) {
-      var xhr = new XMLHttpRequest();
-      xhr.open("GET", "http://192.168.5.184/speed?value=" + value, true);
-      xhr.send();
-    }
-
-    function fetchSensorData() {
-      var xhr = new XMLHttpRequest();
-      xhr.open("GET", "http://192.168.5.184/sensor_data", true);
-      xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4 && xhr.status == 200) {
-          var data = JSON.parse(xhr.responseText);
-          document.getElementById("ammonia-bar").style.width = data.ammonia + "px";
-          document.getElementById("metal-bar").style.background = data.metal ? "red" : "green";
-          document.getElementById("temperature-bar").style.width = data.temperature + "px";
-          document.getElementById("rain-bar").style.background = data.rain ? "blue" : "gray";
-          var notifications = "";
-          if (data.distanceFront < 20 || data.distanceBack < 20 || data.distanceLeft < 20 || data.distanceRight < 20) {
-            notifications += "Obstacle detected! ";
-          }
-          if (data.ammonia > 100) {
-            notifications += "High ammonia concentration! ";
-          }
-          document.getElementById("notifications").innerText = notifications;
+        function sendCommand(command) {
+            fetch(`http://${esp32IP}/${command}`)
+                .then(response => response.text())
+                .then(data => console.log(data))
+                .catch(error => console.error('Error:', error));
         }
-      };
-      xhr.send();
-    }
 
-    setInterval(fetchSensorData, 1000); // Fetch sensor data every second
-  </script>
+        function toggleLED() {
+            fetch(`http://${esp32IP}/toggleLED`)
+                .then(response => response.text())
+                .then(data => console.log(data))
+                .catch(error => console.error('Error:', error));
+        }
+
+        function capturePhoto() {
+            fetch(`http://${esp32IP}/capture`)
+                .then(response => response.text())
+                .then(data => console.log(data))
+                .catch(error => console.error('Error:', error));
+        }
+
+        function startMove(direction) {
+            moveInterval = setInterval(() => {
+                fetch(`http://${esp32IP}/move?direction=${direction}`)
+                    .then(response => response.text())
+                    .then(data => console.log(data))
+                    .catch(error => console.error('Error:', error));
+            }, 100);
+            document.querySelector(`.button.${direction}`).classList.add('active');
+        }
+
+        function stopMove() {
+            clearInterval(moveInterval);
+            document.querySelectorAll('.button').forEach(button => button.classList.remove('active'));
+        }
+
+        setInterval(() => {
+            fetch(`http://${esp32IP}/sensor_data`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('temperature').style.height = `${data.temperature * 1.8}px`;
+                    document.getElementById('ammonia').style.height = `${data.gas * 1.8}px`;
+                    document.getElementById('metal').style.height = `${data.metal * 1.8}px`;
+                    document.getElementById('rain').style.height = `${data.rain * 1.8}px`;
+                    document.getElementById('ultrasonicBar').style.height = `${data.ultrasonic * 1.8}px`;
+                })
+                .catch(error => console.error('Error:', error));
+        }, 1000);
+    </script>
 </body>
 </html>
