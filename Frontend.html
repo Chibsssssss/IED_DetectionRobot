@@ -1,96 +1,88 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Robot Control</title>
+  <title>Robot Control Interface</title>
   <style>
-    body { font-family: Arial, sans-serif; }
-    .container { max-width: 800px; margin: auto; }
-    .video { width: 100%; }
-    .controls, .sliders, .sensors { margin-top: 20px; }
-    .controls button { width: 100px; height: 50px; margin: 10px; }
-    .slider { display: flex; align-items: center; }
-    .slider input { flex-grow: 1; }
-    .slider span { width: 50px; text-align: center; }
-    .sensors { display: flex; justify-content: space-between; }
-    .sensor-bar { width: 100px; height: 200px; background: linear-gradient(to top, green, yellow, red); position: relative; }
-    .sensor-bar span { position: absolute; bottom: 0; width: 100%; text-align: center; color: white; }
+    body { font-family: Arial, sans-serif; text-align: center; }
+    .control-panel { margin-top: 20px; }
+    .button { font-size: 20px; padding: 10px 20px; margin: 10px; }
+    .slider { width: 300px; margin: 20px; }
+    .bar { width: 100px; height: 20px; margin: 10px; display: inline-block; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Robot Control</h1>
-    <img class="video" src="http://192.168.5.98/" alt="Camera Feed">
-    <div class="controls">
-      <button onclick="move('forward')">Forward</button><br>
-      <button onclick="move('left')">Left</button>
-      <button onclick="move('right')">Right</button><br>
-      <button onclick="move('backward')">Backward</button>
-    </div>
-    <div class="sliders">
-      <div class="slider">
-        <span>Pan:</span>
-        <input type="range" min="0" max="180" value="90" oninput="updatePan(this.value)">
-        <span id="pan-output">90</span>
-      </div>
-      <div class="slider">
-        <span>Tilt:</span>
-        <input type="range" min="0" max="180" value="90" oninput="updateTilt(this.value)">
-        <span id="tilt-output">90</span>
-      </div>
-      <div class="slider">
-        <span>Speed:</span>
-        <input type="range" min="0" max="100" value="50" oninput="updateSpeed(this.value)">
-        <span id="speed-output">50</span>
-      </div>
-    </div>
-    <div class="sensors">
-      <div class="sensor-bar" id="ammonia-bar">
-        <span id="ammonia-level">0</span>
-      </div>
-      <div class="sensor-bar" id="metal-bar">
-        <span id="metal-level">No Metal</span>
-      </div>
-      <div class="sensor-bar" id="temperature-bar">
-        <span id="temperature-level">0°C</span>
-      </div>
-    </div>
+  <h1>Robot Control Interface</h1>
+  <div>
+    <img src="http://192.168.5.98/" style="width: 600px; height: 400px;" />
   </div>
+  <div class="control-panel">
+    <button class="button" onclick="move('forward')">Forward</button>
+    <div>
+      <button class="button" onclick="move('left')">Left</button>
+      <button class="button" onclick="move('stop')">Stop</button>
+      <button class="button" onclick="move('right')">Right</button>
+    </div>
+    <button class="button" onclick="move('backward')">Backward</button>
+  </div>
+  <div class="control-panel">
+    <label for="pan">Pan:</label>
+    <input type="range" id="pan" name="pan" min="0" max="180" class="slider" oninput="setServo('pan', this.value)">
+    <label for="tilt">Tilt:</label>
+    <input type="range" id="tilt" name="tilt" min="0" max="180" class="slider" oninput="setServo('tilt', this.value)">
+    <label for="speed">Speed:</label>
+    <input type="range" id="speed" name="speed" min="0" max="255" class="slider" oninput="setSpeed(this.value)">
+  </div>
+  <div class="control-panel">
+    <div class="bar" id="ammonia-bar" style="background: linear-gradient(to right, green, yellow, red);"></div>
+    <div class="bar" id="metal-bar" style="background: green;"></div>
+    <div class="bar" id="temperature-bar" style="background: linear-gradient(to right, blue, red);"></div>
+    <div class="bar" id="rain-bar" style="background: gray;"></div>
+  </div>
+  <div id="notifications"></div>
 
   <script>
-    const mainEsp32Ip = 'http://192.168.5.184';
-
     function move(direction) {
-      fetch(`${mainEsp32Ip}/move?direction=${direction}`);
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", "http://192.168.5.184/move?direction=" + direction, true);
+      xhr.send();
     }
 
-    function updatePan(value) {
-      document.getElementById('pan-output').innerText = value;
-      fetch(`${mainEsp32Ip}/servo?servo=pan&value=${value}`);
+    function setServo(servo, value) {
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", "http://192.168.5.184/servo?servo=" + servo + "&value=" + value, true);
+      xhr.send();
     }
 
-    function updateTilt(value) {
-      document.getElementById('tilt-output').innerText = value;
-      fetch(`${mainEsp32Ip}/servo?servo=tilt&value=${value}`);
+    function setSpeed(value) {
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", "http://192.168.5.184/speed?value=" + value, true);
+      xhr.send();
     }
 
-    function updateSpeed(value) {
-      document.getElementById('speed-output').innerText = value;
-      fetch(`${mainEsp32Ip}/speed?value=${value}`);
+    function fetchSensorData() {
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", "http://192.168.5.184/sensor_data", true);
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+          var data = JSON.parse(xhr.responseText);
+          document.getElementById("ammonia-bar").style.width = data.ammonia + "px";
+          document.getElementById("metal-bar").style.background = data.metal ? "red" : "green";
+          document.getElementById("temperature-bar").style.width = data.temperature + "px";
+          document.getElementById("rain-bar").style.background = data.rain ? "blue" : "gray";
+          var notifications = "";
+          if (data.distanceFront < 20 || data.distanceBack < 20 || data.distanceLeft < 20 || data.distanceRight < 20) {
+            notifications += "Obstacle detected! ";
+          }
+          if (data.ammonia > 100) {
+            notifications += "High ammonia concentration! ";
+          }
+          document.getElementById("notifications").innerText = notifications;
+        }
+      };
+      xhr.send();
     }
 
-    function updateSensorData() {
-      fetch(`${mainEsp32Ip}/sensor_data`).then(response => response.json()).then(data => {
-        document.getElementById('ammonia-level').innerText = data.ammonia;
-        document.getElementById('metal-level').innerText = data.metal ? 'Metal Detected' : 'No Metal';
-        document.getElementById('temperature-level').innerText = `${data.temperature}°C`;
-
-        document.getElementById('ammonia-bar').style.height = `${data.ammonia}%`;
-        document.getElementById('metal-bar').style.backgroundColor = data.metal ? 'red' : 'green';
-        document.getElementById('temperature-bar').style.height = `${data.temperature}%`;
-      });
-    }
-
-    setInterval(updateSensorData, 1000);
+    setInterval(fetchSensorData, 1000); // Fetch sensor data every second
   </script>
 </body>
 </html>
