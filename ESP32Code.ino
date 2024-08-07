@@ -13,6 +13,25 @@ int panPos = 90;
 int tiltPos = 90;
 int speed = 50;
 
+// Ultrasonic sensor pins
+const int trigFrontPin = 5;
+const int echoFrontPin = 18;
+const int trigBackPin = 19;
+const int echoBackPin = 21;
+const int trigLeftPin = 22;
+const int echoLeftPin = 23;
+const int trigRightPin = 32;
+const int echoRightPin = 33;
+
+// Sensor pins
+const int ammoniaSensorPin = 34;
+const int metalSensorPin = 35;
+const int temperatureSensorPin = 36;
+
+// Servo pins
+const int panServoPin = 13;
+const int tiltServoPin = 12;
+
 // HTML page to serve
 const char html[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
@@ -80,7 +99,7 @@ const char html[] PROGMEM = R"rawliteral(
   <h1>IED Detection Robot</h1>
   
   <h2>Camera Feed</h2>
-  <img src="http://192.168.5.98" />
+  <img class="video" src="http://192.168.5.98/" alt="Camera Feed">
   
   <h2>Car Control</h2>
   <div class="control-container">
@@ -114,69 +133,42 @@ const char html[] PROGMEM = R"rawliteral(
       <span id="ammonia-level">0</span>
     </div>
     <div class="sensor-bar" id="metal-bar">
-      <span id="metal-status">No Metal</span>
+      <span id="metal-level">No Metal</span>
     </div>
     <div class="sensor-bar" id="temperature-bar">
-      <span id="temperature-level">0</span>
+      <span id="temperature-level">0°C</span>
     </div>
   </div>
 
   <script>
-    function fetchSensorData() {
-      fetch('/sensor_data')
-        .then(response => response.json())
-        .then(data => {
-          updateAmmoniaBar(data.ammonia);
-          updateMetalBar(data.metal);
-          updateTemperatureBar(data.temperature);
-        })
-        .catch(error => console.error('Error fetching sensor data:', error));
-    }
-
-    function updateAmmoniaBar(level) {
-      const ammoniaBar = document.getElementById('ammonia-bar');
-      const ammoniaLevel = document.getElementById('ammonia-level');
-      const height = Math.min(level / 1000 * 200, 200);
-      ammoniaBar.style.background = `linear-gradient(to top, red ${height}px, transparent ${height}px)`;
-      ammoniaLevel.innerText = level;
-      ammoniaLevel.style.bottom = `${height}px`;
-    }
-
-    function updateMetalBar(status) {
-      const metalBar = document.getElementById('metal-bar');
-      const metalStatus = document.getElementById('metal-status');
-      metalBar.style.background = status ? 'red' : 'green';
-      metalStatus.innerText = status ? 'Metal Detected' : 'No Metal';
-    }
-
-    function updateTemperatureBar(level) {
-      const temperatureBar = document.getElementById('temperature-bar');
-      const temperatureLevel = document.getElementById('temperature-level');
-      const height = Math.min(level / 100 * 200, 200);
-      temperatureBar.style.background = `linear-gradient(to top, blue ${height}px, transparent ${height}px)`;
-      temperatureLevel.innerText = level;
-      temperatureLevel.style.bottom = `${height}px`;
-    }
-
     function updatePan(value) {
       document.getElementById('pan-output').innerText = value;
-      fetch(`/servo?pan=${value}`)
-        .catch(error => console.error('Error updating pan:', error));
+      fetch(`/servo?servo=pan&value=${value}`);
     }
 
     function updateTilt(value) {
       document.getElementById('tilt-output').innerText = value;
-      fetch(`/servo?tilt=${value}`)
-        .catch(error => console.error('Error updating tilt:', error));
+      fetch(`/servo?servo=tilt&value=${value}`);
     }
 
     function updateSpeed(value) {
       document.getElementById('speed-output').innerText = value;
-      fetch(`/speed?value=${value}`)
-        .catch(error => console.error('Error updating speed:', error));
+      fetch(`/speed?value=${value}`);
     }
 
-    setInterval(fetchSensorData, 5000);
+    function updateSensorData() {
+      fetch('/sensor_data').then(response => response.json()).then(data => {
+        document.getElementById('ammonia-level').innerText = data.ammonia;
+        document.getElementById('metal-level').innerText = data.metal ? 'Metal Detected' : 'No Metal';
+        document.getElementById('temperature-level').innerText = `${data.temperature}°C`;
+
+        document.getElementById('ammonia-bar').style.height = `${data.ammonia}%`;
+        document.getElementById('metal-bar').style.backgroundColor = data.metal ? 'red' : 'green';
+        document.getElementById('temperature-bar').style.height = `${data.temperature}%`;
+      });
+    }
+
+    setInterval(updateSensorData, 1000);
   </script>
 </body>
 </html>
@@ -188,50 +180,73 @@ void handleRoot() {
 
 void handleMove() {
   String direction = server.arg("direction");
-  // Add motor control code based on direction
-  server.send(204, "text/plain", "Moved");
+  if (direction == "forward") {
+    // Move forward
+  } else if (direction == "backward") {
+    // Move backward
+  } else if (direction == "left") {
+    // Move left
+  } else if (direction == "right") {
+    // Move right
+  }
+  server.send(200, "text/plain", "OK");
 }
 
 void handleServo() {
-  if (server.hasArg("pan")) {
-    panPos = server.arg("pan").toInt();
-    panServo.write(panPos);
+  String servo = server.arg("servo");
+  int value = server.arg("value").toInt();
+  if (servo == "pan") {
+    panServo.write(value);
+  } else if (servo == "tilt") {
+    tiltServo.write(value);
   }
-  if (server.hasArg("tilt")) {
-    tiltPos = server.arg("tilt").toInt();
-    tiltServo.write(tiltPos);
-  }
-  server.send(204, "text/plain", "Servo Moved");
+  server.send(200, "text/plain", "OK");
 }
 
 void handleSpeed() {
-  if (server.hasArg("value")) {
-    speed = server.arg("value").toInt();
-    // Add motor speed control code
-  }
-  server.send(204, "text/plain", "Speed Set");
+  speed = server.arg("value").toInt();
+  server.send(200, "text/plain", "OK");
 }
 
 void handleSensorData() {
+  int ammonia = analogRead(ammoniaSensorPin);
+  int metal = digitalRead(metalSensorPin);
+  int temperature = analogRead(temperatureSensorPin);
+
   String json = "{";
-  json += "\"ammonia\": " + String(analogRead(34)) + ",";
-  json += "\"metal\": " + String(digitalRead(35)) + ",";
-  json += "\"temperature\": " + String(analogRead(36));
+  json += "\"ammonia\": " + String(ammonia) + ",";
+  json += "\"metal\": " + String(metal) + ",";
+  json += "\"temperature\": " + String(temperature) + ",";
+  //json += "\"front\": " + String(getDistance(trigFrontPin, echoFrontPin)) + ",";
+  //json += "\"back\": " + String(getDistance(trigBackPin, echoBackPin)) + ",";
+  //json += "\"left\": " + String(getDistance(trigLeftPin, echoLeftPin)) + ",";
+  //json += "\"right\": " + String(getDistance(trigRightPin, echoRightPin));
   json += "}";
   server.send(200, "application/json", json);
+}
+
+long getDistance(int trigPin, int echoPin) {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  long duration = pulseIn(echoPin, HIGH);
+  return duration * 0.034 / 2;
 }
 
 void setup() {
   Serial.begin(115200);
 
+  // Set up Wi-Fi
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.println("Connecting to WiFi...");
   }
   Serial.println("Connected to WiFi");
-  Serial.println(WiFi.localIP());
 
+  // Set up server routes
   server.on("/", handleRoot);
   server.on("/move", handleMove);
   server.on("/servo", handleServo);
@@ -240,11 +255,26 @@ void setup() {
 
   server.begin();
   Serial.println("HTTP server started");
+  Serial.print(WiFi.localIP());
 
-  panServo.attach(18); // Adjust the pin numbers as needed
-  tiltServo.attach(19); // Adjust the pin numbers as needed
-  panServo.write(panPos);
-  tiltServo.write(tiltPos);
+  // Attach servos
+  panServo.attach(panServoPin);
+  tiltServo.attach(tiltServoPin);
+
+  // Set up ultrasonic sensors
+  pinMode(trigFrontPin, OUTPUT);
+  pinMode(echoFrontPin, INPUT);
+  pinMode(trigBackPin, OUTPUT);
+  pinMode(echoBackPin, INPUT);
+  pinMode(trigLeftPin, OUTPUT);
+  pinMode(echoLeftPin, INPUT);
+  pinMode(trigRightPin, OUTPUT);
+  pinMode(echoRightPin, INPUT);
+
+  // Set up other sensors
+  pinMode(ammoniaSensorPin, INPUT);
+  pinMode(metalSensorPin, INPUT);
+  pinMode(temperatureSensorPin, INPUT);
 }
 
 void loop() {
