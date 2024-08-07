@@ -57,12 +57,6 @@ bool ledState = false;
 
 WebServer server(80);
 
-// Define PWM channels and frequency
-//const int pwmChannelA = 0;
-//const int pwmChannelB = 1;
-//const int pwmFreq = 5000; // 5 kHz
-//const int pwmResolution = 8; // 8-bit resolution (0-255)
-
 void setup() {
   Serial.begin(115200);
   dht.begin();
@@ -90,14 +84,6 @@ void setup() {
   pinMode(IN4, OUTPUT);
   pinMode(enA, OUTPUT);
   pinMode(enB, OUTPUT);
-
-  // Initialize PWM channels
-  //ledcSetup(pwmChannelA, pwmFreq, pwmResolution);
-  //ledcSetup(pwmChannelB, pwmFreq, pwmResolution);
-
-  // Attach the PWM channels to the GPIO pins
-  //ledcAttachPin(enA, pwmChannelA);
-  //ledcAttachPin(enB, pwmChannelB);
 
   // Initialize servos
   panServo.attach(panServoPin);
@@ -145,9 +131,6 @@ void handleMove() {
     digitalWrite(IN4, LOW);
     analogWrite(enA, speedValue);
     analogWrite(enB, speedValue);
-    //ledcWrite(pwmChannelA, speedValue);
-    //ledcWrite(pwmChannelB, speedValue);
-
     Serial.print("Moving forward with speed: ");
     Serial.println(speedValue);
   } else if (direction == "backward") {
@@ -157,8 +140,6 @@ void handleMove() {
     digitalWrite(IN4, HIGH);
     analogWrite(enA, speedValue);
     analogWrite(enB, speedValue);
-    //ledcWrite(pwmChannelA, speedValue);
-    //ledcWrite(pwmChannelB, speedValue);
     Serial.print("Moving backward with speed: ");
     Serial.println(speedValue);
   } else if (direction == "left") {
@@ -168,8 +149,6 @@ void handleMove() {
     digitalWrite(IN4, LOW);
     analogWrite(enA, speedValue);
     analogWrite(enB, speedValue);
-    //ledcWrite(pwmChannelA, speedValue);
-    //ledcWrite(pwmChannelB, speedValue);
     Serial.print("Turning left with speed: ");
     Serial.println(speedValue);
   } else if (direction == "right") {
@@ -179,8 +158,6 @@ void handleMove() {
     digitalWrite(IN4, HIGH);
     analogWrite(enA, speedValue);
     analogWrite(enB, speedValue);
-    //ledcWrite(pwmChannelA, speedValue);
-    //ledcWrite(pwmChannelB, speedValue);
     Serial.print("Turning right with speed: ");
     Serial.println(speedValue);
   } else if (direction == "stop") {
@@ -188,8 +165,6 @@ void handleMove() {
     digitalWrite(IN2, LOW);
     digitalWrite(IN3, LOW);
     digitalWrite(IN4, LOW);
-    //ledcWrite(pwmChannelA, 0);
-    //ledcWrite(pwmChannelB, 0);
     Serial.println("Stopping");
   }
 
